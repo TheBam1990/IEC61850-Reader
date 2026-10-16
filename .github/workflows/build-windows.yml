@@ -1,0 +1,28 @@
+name: Build portable Windows EXE
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Fetch official libiec61850
+        shell: bash
+        run: git clone --depth 1 --branch v1.6.2 https://github.com/mz-automation/libiec61850.git vendor/libiec61850
+      - name: Build native bridge
+        run: cmake -S . -B build -A x64 -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF; cmake --build build --config Release --target iec61850-bridge
+      - run: pip install -r requirements-build.txt
+      - run: python -m unittest discover -s tests -v
+      - run: pyinstaller --clean --noconfirm IEC61850-Reader.spec
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IEC61850-Reader-Windows-portable
+          path: dist/IEC61850-Reader.exe
