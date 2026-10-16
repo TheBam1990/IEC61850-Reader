@@ -22,7 +22,7 @@ static void print_data_directory(IedConnection con, const char* ref, int depth)
 {
     if (depth > 12) return;
     IedClientError error;
-    LinkedList list = IedConnection_getDataDirectoryFC(con, &error, ref);
+    LinkedList list = IedConnection_getDataDirectory(con, &error, ref);
     if (list == NULL || error != IED_ERROR_OK) return;
     LinkedList item = LinkedList_getNext(list);
     while (item) {

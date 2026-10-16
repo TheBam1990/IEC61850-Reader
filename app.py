@@ -7,7 +7,7 @@ from iec61850.backend import Backend, ModelItem
 from iec61850.scl import load_scl
 from iec61850.send_dialog import SendDialog
 
-APP_NAME="IEC61850 Reader"; APP_VERSION="0.1.0"
+APP_NAME="IEC61850 Reader"; APP_VERSION="0.1.1"
 
 class App(tk.Tk):
     def __init__(self):
