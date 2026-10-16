@@ -6,8 +6,9 @@ from tkinter import filedialog, messagebox, ttk
 from iec61850.backend import Backend, ModelItem
 from iec61850.scl import load_scl
 from iec61850.send_dialog import SendDialog
+from iec61850.monitor_dialog import MonitorDialog
 
-APP_NAME="IEC61850 Reader"; APP_VERSION="0.1.1"
+APP_NAME="IEC61850 Reader"; APP_VERSION="0.2.0"
 
 class App(tk.Tk):
     def __init__(self):
@@ -23,7 +24,8 @@ class App(tk.Tk):
         ttk.Button(top,text="Online-Modell lesen",command=self.browse).grid(row=1,column=3,padx=4)
         ttk.Button(top,text="SCL importieren",command=self.import_scl).grid(row=1,column=4,padx=4)
         ttk.Button(top,text="Senden ...",command=self.open_send).grid(row=1,column=5,padx=4)
-        ttk.Label(top,text="Filter").grid(row=0,column=6,sticky="w"); ttk.Entry(top,textvariable=self.filter,width=28).grid(row=1,column=6,padx=4); self.filter.trace_add("write",lambda *_:self.render())
+        ttk.Button(top,text="Reports / GOOSE / TLS ...",command=self.open_monitors).grid(row=1,column=6,padx=4)
+        ttk.Label(top,text="Filter").grid(row=0,column=7,sticky="w"); ttk.Entry(top,textvariable=self.filter,width=25).grid(row=1,column=7,padx=4); self.filter.trace_add("write",lambda *_:self.render())
         split=ttk.Panedwindow(self,orient="horizontal"); split.pack(fill="both",expand=True,padx=8,pady=4)
         left=ttk.LabelFrame(split,text="Gerätemodell",padding=4); right=ttk.LabelFrame(split,text="Werte und Ereignisse",padding=4); split.add(left,weight=2); split.add(right,weight=3)
         self.tree=ttk.Treeview(left,columns=("kind",),show="tree headings"); self.tree.heading("#0",text="Objektreferenz"); self.tree.heading("kind",text="Art"); self.tree.column("kind",width=80,stretch=False); self.tree.pack(fill="both",expand=True); self.tree.bind("<Double-1>",lambda _e:self.read_selected())
@@ -76,6 +78,8 @@ class App(tk.Tk):
         self.open_send(ref)
     def open_send(self,ref=""):
         SendDialog(self,self.do_read,self.do_write,self.do_control,ref)
+    def open_monitors(self):
+        MonitorDialog(self,self.backend,self.target,self._log)
     def do_read(self,ref,fc):
         h,p=self.target(); value=self.backend.read(h,p,ref,fc); now=f"{datetime.now():%Y-%m-%d %H:%M:%S}"; self.values.insert("",0,values=(ref,fc,value,now)); self._log(f"READ {ref} [{fc}] = {value}")
     def do_write(self,ref,fc,typ,value):

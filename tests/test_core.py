@@ -21,4 +21,13 @@ class CoreTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError,"Native IEC61850-Komponente fehlt"):
             Backend(Path("missing-bridge.exe")).probe("127.0.0.1",102)
 
+    def test_tls_environment_is_local(self):
+        backend=Backend(Path("bridge.exe")); backend.set_tls(True,"ca.pem","client.crt","client.key")
+        env=backend.environment()
+        self.assertEqual(env["IEC61850_TLS_CA"],"ca.pem")
+        self.assertEqual(env["IEC61850_TLS_CERT"],"client.crt")
+        self.assertEqual(env["IEC61850_TLS_KEY"],"client.key")
+        backend.set_tls(False)
+        self.assertNotIn("IEC61850_TLS_CA",backend.environment())
+
 if __name__=="__main__": unittest.main()

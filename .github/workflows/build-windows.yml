@@ -17,7 +17,15 @@ jobs:
           cache-dependency-path: requirements-build.txt
       - name: Fetch official libiec61850
         shell: bash
-        run: git clone --depth 1 --branch v1.6.2 https://github.com/mz-automation/libiec61850.git vendor/libiec61850
+        run: |
+          git clone --depth 1 --branch v1.6.2.1 https://github.com/mz-automation/libiec61850.git vendor/libiec61850
+          git clone --depth 1 --branch v3.6.4 https://github.com/Mbed-TLS/mbedtls.git vendor/libiec61850/third_party/mbedtls/mbedtls-3.6.0
+          curl -L https://npcap.com/dist/npcap-sdk-1.15.zip -o npcap-sdk.zip
+          7z x npcap-sdk.zip -onpcap-sdk
+          mkdir -p vendor/libiec61850/third_party/winpcap/Include vendor/libiec61850/third_party/winpcap/Lib
+          cp -r npcap-sdk/Include/* vendor/libiec61850/third_party/winpcap/Include/
+          cp npcap-sdk/Lib/x64/wpcap.lib vendor/libiec61850/third_party/winpcap/Lib/wpcap.lib
+          cp npcap-sdk/Lib/x64/Packet.lib vendor/libiec61850/third_party/winpcap/Lib/packet.lib
       - name: Build native bridge
         run: cmake -S . -B build -A x64 -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=OFF; cmake --build build --config Release --target iec61850-bridge
       - run: pip install -r requirements-build.txt

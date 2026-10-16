@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-import subprocess, sys
+import os, subprocess, sys
 
 @dataclass(frozen=True)
 class ModelItem:
@@ -16,11 +16,21 @@ def application_directory() -> Path:
 class Backend:
     def __init__(self, executable: Path | None = None):
         self.executable = executable or application_directory() / "iec61850-bridge.exe"
+        self.tls = None
+
+    def set_tls(self, enabled: bool, ca: str = "", cert: str = "", key: str = ""):
+        self.tls = (ca, cert, key) if enabled else None
+
+    def environment(self):
+        env = os.environ.copy()
+        if self.tls:
+            env.update({"IEC61850_TLS_CA": self.tls[0], "IEC61850_TLS_CERT": self.tls[1], "IEC61850_TLS_KEY": self.tls[2]})
+        return env
 
     def run(self, action: str, host: str, port: int, *args: str) -> str:
         if not self.executable.exists():
             raise RuntimeError(f"Native IEC61850-Komponente fehlt: {self.executable}")
-        completed = subprocess.run([str(self.executable), action, host, str(port), *map(str, args)], capture_output=True, text=True, timeout=60, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        completed = subprocess.run([str(self.executable), action, host, str(port), *map(str, args)], capture_output=True, text=True, timeout=60, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), env=self.environment())
         if completed.returncode:
             raise RuntimeError(completed.stderr.strip() or f"IEC61850-Aktion fehlgeschlagen ({completed.returncode})")
         return completed.stdout
@@ -38,3 +48,9 @@ class Backend:
     def write(self, host, port, reference, fc, value_type, value): self.run("write",host,port,reference,fc,value_type,value)
     def control(self, host, port, reference, value_type, value, action, origin, test, interlock, synchro):
         self.run("control",host,port,reference,value_type,value,action,origin,int(test),int(interlock),int(synchro))
+
+    def start_report(self, host, port, rcb, dataset):
+        return subprocess.Popen([str(self.executable), "report", host, str(port), rcb, dataset], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0), env=self.environment())
+
+    def start_goose(self, interface):
+        return subprocess.Popen([str(self.executable), "goose", interface], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, creationflags=getattr(subprocess,"CREATE_NO_WINDOW",0), env=self.environment())
